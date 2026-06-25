@@ -1,5 +1,14 @@
 const SECRET = process.env.JWT_SECRET || 'coinmitra-super-secret-key-at-least-32-characters';
 
+export type SessionPayload = {
+  userId: string;
+  phone: string;
+  adminId?: string;
+  email?: string;
+  role?: 'admin' | 'user';
+  expires: number;
+};
+
 function base64url(source: ArrayBuffer): string {
   const bytes = new Uint8Array(source);
   let binary = '';
@@ -12,7 +21,7 @@ function base64url(source: ArrayBuffer): string {
     .replace(/=/g, '');
 }
 
-function base64urlDecode(str: string): any {
+function base64urlDecode(str: string): Uint8Array {
   let base64 = str.replace(/-/g, '+').replace(/_/g, '/');
   while (base64.length % 4) {
     base64 += '=';
@@ -26,11 +35,11 @@ function base64urlDecode(str: string): any {
 }
 
 // Convert a string to an ArrayBuffer
-function stringToBuffer(str: string): any {
+function stringToBuffer(str: string): Uint8Array {
   return new TextEncoder().encode(str);
 }
 
-export async function signToken(payload: { userId: string; phone: string; expires: number }): Promise<string> {
+export async function signToken(payload: SessionPayload): Promise<string> {
   const payloadStr = JSON.stringify(payload);
   const encodedPayload = btoa(payloadStr)
     .replace(/\+/g, '-')
@@ -52,7 +61,7 @@ export async function signToken(payload: { userId: string; phone: string; expire
   return `${encodedPayload}.${encodedSignature}`;
 }
 
-export async function verifyToken(token: string): Promise<{ userId: string; phone: string; expires: number } | null> {
+export async function verifyToken(token: string): Promise<SessionPayload | null> {
   try {
     const parts = token.split('.');
     if (parts.length !== 2) return null;

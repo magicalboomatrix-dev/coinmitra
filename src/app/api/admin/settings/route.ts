@@ -1,37 +1,33 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import clientPromise from '@/lib/mongodb';
-import { verifyToken } from '@/lib/auth';
+import { getAdminSession } from '@/lib/admin-auth';
 
-async function getAuthUser() {
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get('session');
-  if (!sessionCookie || !sessionCookie.value) return null;
-
-  const payload = await verifyToken(sessionCookie.value);
-  if (!payload) return null;
-
-  return payload;
-}
+type SettingsDocument = {
+  _id: string;
+  usdtRate?: number;
+  minDeposit?: number;
+  minWithdraw?: number;
+  updatedAt?: Date;
+  updatedBy?: string;
+};
 
 export async function GET() {
   try {
-    const session = await getAuthUser();
-    if (!session) {
+    const admin = await getAdminSession();
+    if (!admin) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const client = await clientPromise;
     const db = client.db('coinmitra');
-    const settingsCollection = db.collection('settings');
+    const settingsCollection = db.collection<SettingsDocument>('settings');
+    const settings = await settingsCollection.findOne({ _id: 'global' });
 
-    const settings = await settingsCollection.findOne({ _id: 'global' as any });
-    
     return NextResponse.json({
       success: true,
-      usdtRate: settings?.usdtRate ?? 111.00,
+      usdtRate: settings?.usdtRate ?? 111,
       minDeposit: settings?.minDeposit ?? 10,
-      minWithdraw: settings?.minWithdraw ?? 10
+      minWithdraw: settings?.minWithdraw ?? 10,
     });
   } catch (error) {
     console.error('Error in admin settings GET:', error);
@@ -41,39 +37,36 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const session = await getAuthUser();
-    if (!session) {
+    const admin = await getAdminSession();
+    if (!admin) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
-    const { usdtRate, minDeposit, minWithdraw } = body;
-
-    // Build $set object dynamically — only update fields that are provided
-    const updateFields: Record<string, any> = {
+    const updateFields: Partial<SettingsDocument> = {
       updatedAt: new Date(),
-      updatedBy: session.phone
+      updatedBy: admin.email,
     };
 
-    if (usdtRate !== undefined) {
-      const numericRate = parseFloat(usdtRate);
-      if (isNaN(numericRate) || numericRate <= 0) {
+    if (body.usdtRate !== undefined) {
+      const numericRate = Number(body.usdtRate);
+      if (!Number.isFinite(numericRate) || numericRate <= 0) {
         return NextResponse.json({ error: 'Invalid exchange rate' }, { status: 400 });
       }
       updateFields.usdtRate = numericRate;
     }
 
-    if (minDeposit !== undefined) {
-      const numericMinDeposit = parseFloat(minDeposit);
-      if (isNaN(numericMinDeposit) || numericMinDeposit <= 0) {
+    if (body.minDeposit !== undefined) {
+      const numericMinDeposit = Number(body.minDeposit);
+      if (!Number.isFinite(numericMinDeposit) || numericMinDeposit <= 0) {
         return NextResponse.json({ error: 'Invalid minimum deposit' }, { status: 400 });
       }
       updateFields.minDeposit = numericMinDeposit;
     }
 
-    if (minWithdraw !== undefined) {
-      const numericMinWithdraw = parseFloat(minWithdraw);
-      if (isNaN(numericMinWithdraw) || numericMinWithdraw <= 0) {
+    if (body.minWithdraw !== undefined) {
+      const numericMinWithdraw = Number(body.minWithdraw);
+      if (!Number.isFinite(numericMinWithdraw) || numericMinWithdraw <= 0) {
         return NextResponse.json({ error: 'Invalid minimum withdrawal' }, { status: 400 });
       }
       updateFields.minWithdraw = numericMinWithdraw;
@@ -81,23 +74,22 @@ export async function POST(request: Request) {
 
     const client = await clientPromise;
     const db = client.db('coinmitra');
-    const settingsCollection = db.collection('settings');
+    const settingsCollection = db.collection<SettingsDocument>('settings');
 
     await settingsCollection.updateOne(
-      { _id: 'global' as any },
+      { _id: 'global' },
       { $set: updateFields },
       { upsert: true }
     );
 
-    // Fetch updated doc to return current values
-    const updated = await settingsCollection.findOne({ _id: 'global' as any });
+    const updated = await settingsCollection.findOne({ _id: 'global' });
 
     return NextResponse.json({
       success: true,
       message: 'Settings updated successfully',
-      usdtRate: updated?.usdtRate ?? 111.00,
+      usdtRate: updated?.usdtRate ?? 111,
       minDeposit: updated?.minDeposit ?? 10,
-      minWithdraw: updated?.minWithdraw ?? 10
+      minWithdraw: updated?.minWithdraw ?? 10,
     });
   } catch (error) {
     console.error('Error in admin settings POST:', error);
