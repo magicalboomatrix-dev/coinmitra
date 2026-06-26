@@ -21,7 +21,7 @@ function base64url(source: ArrayBuffer): string {
     .replace(/=/g, '');
 }
 
-function base64urlDecode(str: string): Uint8Array {
+function base64urlDecode(str: string): ArrayBuffer {
   let base64 = str.replace(/-/g, '+').replace(/_/g, '/');
   while (base64.length % 4) {
     base64 += '=';
@@ -31,12 +31,12 @@ function base64urlDecode(str: string): Uint8Array {
   for (let i = 0; i < binary.length; i++) {
     bytes[i] = binary.charCodeAt(i);
   }
-  return bytes;
+  return bytes.buffer as ArrayBuffer;
 }
 
-// Convert a string to an ArrayBuffer
-function stringToBuffer(str: string): Uint8Array {
-  return new TextEncoder().encode(str);
+// WebCrypto expects a BufferSource backed by ArrayBuffer, not SharedArrayBuffer.
+function stringToBuffer(str: string): ArrayBuffer {
+  return new TextEncoder().encode(str).buffer as ArrayBuffer;
 }
 
 export async function signToken(payload: SessionPayload): Promise<string> {
