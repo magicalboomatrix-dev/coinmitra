@@ -32,7 +32,7 @@ export async function GET() {
       user: {
         id: user._id.toString(),
         phone: user.phone,
-        balance: user.balance ?? 10.00,
+        balance: user.balance ?? 0,
         isVerified: user.isVerified ?? false
       }
     });

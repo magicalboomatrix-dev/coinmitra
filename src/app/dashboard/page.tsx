@@ -82,8 +82,8 @@ export default function Dashboard() {
   }, []);
 
   const displayId = user ? user.id.slice(-6) : '562520';
-  const balance = user ? user.balance.toFixed(2) : '10.00';
-  const inrEquivalent = user ? (user.balance * liveRate).toLocaleString('en-IN') : (10 * liveRate).toLocaleString('en-IN');
+  const balance = user ? user.balance.toFixed(2) : '0.00';
+  const inrEquivalent = user ? (user.balance * liveRate).toLocaleString('en-IN') : '0';
 
   useEffect(() => {
     if (isDarkMode) {
@@ -510,4 +510,3 @@ export default function Dashboard() {
     </div>
   );
 }
-

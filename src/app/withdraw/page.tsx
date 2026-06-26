@@ -16,7 +16,7 @@ export default function WithdrawPage() {
   const [selectedLang, setSelectedLang] = useState('EN');
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
   const [amount, setAmount] = useState('0.00');
-  const [balance, setBalance] = useState(10.00);
+  const [balance, setBalance] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 

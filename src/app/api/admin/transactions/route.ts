@@ -47,7 +47,7 @@ function serializeTransaction(tx: TransactionDocument, user?: UserDocument | nul
       ? {
           id: user._id.toString(),
           phone: user.phone,
-          balance: user.balance ?? 10,
+          balance: user.balance ?? 0,
           isVerified: Boolean(user.isVerified),
           createdAt: user.createdAt,
         }
@@ -164,7 +164,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'User associated with transaction not found' }, { status: 404 });
     }
 
-    const currentBalance = user.balance ?? 10;
+    const currentBalance = user.balance ?? 0;
     const status: TransactionStatus = action === 'approve' ? 'Success' : 'Failed';
     const fallbackRemarks = action === 'approve' ? `Approved by ${admin.email}` : `Rejected by ${admin.email}`;
 

@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     if (!user) {
       await usersCollection.insertOne({
         phone: normalizedPhone,
-        balance: 10.00,
+        balance: 0,
         isVerified: false,
         createdAt: new Date(),
         updatedAt: new Date(),
